@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createAdminClient } from '@/lib/supabase';
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN || 'modelnets.com';
 
@@ -49,8 +50,11 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.getUser();
 
       if (user) {
+        // Use admin client to bypass RLS for lookups
+        const adminSupabase = createAdminClient();
+
         // Check if user is super admin
-        const { data: userData } = await supabase
+        const { data: userData } = await adminSupabase
           .from('users')
           .select('role')
           .eq('id', user.id)
@@ -59,13 +63,12 @@ export async function GET(request: NextRequest) {
         if (userData?.role === 'super_admin') {
           // Redirect to super admin dashboard
           const adminUrl = new URL(requestUrl.origin);
-          // In production, this would be admin.tip-app.vercel.app
           adminUrl.pathname = '/admin';
           return NextResponse.redirect(adminUrl);
         }
 
         // Get user's organization
-        const { data: membership } = await supabase
+        const { data: membership } = await adminSupabase
           .from('organization_members')
           .select('organization_id, organizations(slug)')
           .eq('user_id', user.id)
@@ -74,7 +77,7 @@ export async function GET(request: NextRequest) {
         if (membership?.organizations) {
           // Redirect to organization dashboard
           const org = membership.organizations as unknown as { slug: string };
-          const dashboardUrl = new URL(`https://${org.slug}.modelnets.com/dashboard`);
+          const dashboardUrl = new URL(`https://${org.slug}.${APP_DOMAIN}/dashboard`);
           return NextResponse.redirect(dashboardUrl);
         }
 
