@@ -17,7 +17,9 @@ export const supabase = (() => {
   return supabaseClient;
 })();
 
-// Server-side Supabase client (uses service role, bypasses RLS)
+// Server-side Supabase admin client (singleton pattern)
+let adminClient: SupabaseClient | null = null;
+
 export function createAdminClient(): SupabaseClient {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
@@ -26,5 +28,9 @@ export function createAdminClient(): SupabaseClient {
     return createClient('https://placeholder.supabase.co', 'placeholder-key');
   }
 
-  return createClient(supabaseUrl, supabaseServiceKey);
+  // Reuse existing client if available (singleton)
+  if (!adminClient) {
+    adminClient = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return adminClient;
 }

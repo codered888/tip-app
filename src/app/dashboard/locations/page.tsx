@@ -17,13 +17,13 @@ async function getOrganization(slug: string) {
 async function getLocationsWithCounts(organizationId: string) {
   const supabase = createAdminClient();
 
-  const [locationsResult, employeeLocationsResult, employeesResult] = await Promise.all([
+  // First fetch locations and approved employees for this org
+  const [locationsResult, employeesResult] = await Promise.all([
     supabase
       .from('locations')
       .select('*')
       .eq('organization_id', organizationId)
       .order('name'),
-    supabase.from('employee_locations').select('*'),
     supabase
       .from('employees')
       .select('id')
@@ -32,15 +32,20 @@ async function getLocationsWithCounts(organizationId: string) {
   ]);
 
   const locations = (locationsResult.data || []) as Location[];
-  const employeeLocations = employeeLocationsResult.data || [];
-  const approvedEmployeeIds = new Set((employeesResult.data || []).map((e) => e.id));
+  const approvedEmployeeIds = (employeesResult.data || []).map((e) => e.id);
 
+  // Only fetch employee_locations for approved employees (not ALL globally)
   const counts: Record<string, number> = {};
-  employeeLocations.forEach((el) => {
-    if (approvedEmployeeIds.has(el.employee_id)) {
+  if (approvedEmployeeIds.length > 0) {
+    const { data: employeeLocations } = await supabase
+      .from('employee_locations')
+      .select('location_id, employee_id')
+      .in('employee_id', approvedEmployeeIds);
+
+    (employeeLocations || []).forEach((el) => {
       counts[el.location_id] = (counts[el.location_id] || 0) + 1;
-    }
-  });
+    });
+  }
 
   return locations.map((loc) => ({
     ...loc,

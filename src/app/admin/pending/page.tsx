@@ -5,17 +5,27 @@ import type { Employee, Location, EmployeeLocation } from '@/lib/types';
 async function getPendingEmployees() {
   const supabase = createAdminClient();
 
-  const [employeesResult, locationsResult, employeeLocationsResult] = await Promise.all([
+  // First fetch pending employees and locations
+  const [employeesResult, locationsResult] = await Promise.all([
     supabase.from('employees').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     supabase.from('locations').select('*'),
-    supabase.from('employee_locations').select('*'),
   ]);
 
   const employees = (employeesResult.data || []) as Employee[];
   const locations = (locationsResult.data || []) as Location[];
-  const employeeLocations = (employeeLocationsResult.data || []) as EmployeeLocation[];
-
   const locationsMap = new Map(locations.map((l) => [l.id, l]));
+
+  // Only fetch employee_locations for pending employees (not ALL)
+  const employeeIds = employees.map((e) => e.id);
+  let employeeLocations: EmployeeLocation[] = [];
+
+  if (employeeIds.length > 0) {
+    const { data } = await supabase
+      .from('employee_locations')
+      .select('*')
+      .in('employee_id', employeeIds);
+    employeeLocations = (data || []) as EmployeeLocation[];
+  }
 
   return employees.map((employee) => {
     const empLocations = employeeLocations

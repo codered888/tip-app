@@ -5,6 +5,23 @@ import { NextResponse, type NextRequest } from 'next/server';
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN || 'modelnets.com';
 const LOCALHOST_DOMAIN = 'localhost:3000';
 
+// Routes that require authentication check
+const PROTECTED_PATHS = ['/dashboard', '/admin'];
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/location', '/auth', '/api', '/onboarding'];
+
+function needsAuthCheck(pathname: string, subdomain: string | null): boolean {
+  // Admin subdomain: protect everything except login
+  if (subdomain === 'admin') {
+    return !pathname.startsWith('/login');
+  }
+  // Tenant subdomain: only protect dashboard
+  if (subdomain) {
+    return pathname.startsWith('/dashboard');
+  }
+  // Marketing domain: no auth needed
+  return false;
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const url = request.nextUrl.clone();
@@ -23,16 +40,38 @@ export async function middleware(request: NextRequest) {
     subdomain = url.searchParams.get('org') || null;
   }
 
-  // Create Supabase client for middleware
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+  // Set headers based on subdomain type
+  const requestHeaders = new Headers(request.headers);
 
-  // Determine cookie domain for cross-subdomain auth
+  if (subdomain === 'admin') {
+    requestHeaders.set('x-subdomain-type', 'superadmin');
+    requestHeaders.set('x-subdomain', 'admin');
+  } else if (subdomain) {
+    requestHeaders.set('x-subdomain-type', 'tenant');
+    requestHeaders.set('x-subdomain', subdomain);
+    requestHeaders.set('x-organization-slug', subdomain);
+  } else {
+    requestHeaders.set('x-subdomain-type', 'marketing');
+  }
+
+  // Only check auth for protected routes (skip for public pages)
+  if (!needsAuthCheck(url.pathname, subdomain)) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
+  // Create Supabase client only when auth check is needed
   const isProduction = hostname.includes(APP_DOMAIN);
   const cookieDomain = isProduction ? `.${APP_DOMAIN}` : undefined;
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,7 +86,9 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           );
           response = NextResponse.next({
-            request,
+            request: {
+              headers: requestHeaders,
+            },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, {
@@ -60,47 +101,18 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session if exists
+  // Check session for protected routes
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Set headers based on subdomain type
-  const requestHeaders = new Headers(request.headers);
-
-  if (subdomain === 'admin') {
-    // Super-admin subdomain
-    requestHeaders.set('x-subdomain-type', 'superadmin');
-    requestHeaders.set('x-subdomain', 'admin');
-
-    // Protect super-admin routes - require authentication
-    if (!session && !url.pathname.startsWith('/login')) {
-      // Redirect to login if not authenticated
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
-  } else if (subdomain) {
-    // Tenant subdomain - lookup organization
-    requestHeaders.set('x-subdomain-type', 'tenant');
-    requestHeaders.set('x-subdomain', subdomain);
-    requestHeaders.set('x-organization-slug', subdomain);
-
-    // For dashboard routes, require authentication
-    if (url.pathname.startsWith('/dashboard') && !session) {
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
-  } else {
-    // Root domain - marketing pages
-    requestHeaders.set('x-subdomain-type', 'marketing');
+  if (!session) {
+    // Redirect to login if not authenticated
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
   }
 
-  // Return response with updated headers
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  return response;
 }
 
 export const config = {

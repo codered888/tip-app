@@ -16,19 +16,20 @@ async function getDashboardData() {
   const employees = (employeesResult.data || []) as Employee[];
   const pending = (pendingResult.data || []) as Employee[];
 
-  // Get employee counts per location
-  const { data: employeeLocations } = await supabase
-    .from('employee_locations')
-    .select('location_id, employee_id');
-
+  // Get employee counts per location - only for approved employees
+  const approvedEmployeeIds = employees.map((e) => e.id);
   const locationCounts: Record<string, number> = {};
-  const approvedEmployeeIds = new Set(employees.map((e) => e.id));
 
-  (employeeLocations || []).forEach((el) => {
-    if (approvedEmployeeIds.has(el.employee_id)) {
+  if (approvedEmployeeIds.length > 0) {
+    const { data: employeeLocations } = await supabase
+      .from('employee_locations')
+      .select('location_id, employee_id')
+      .in('employee_id', approvedEmployeeIds);
+
+    (employeeLocations || []).forEach((el) => {
       locationCounts[el.location_id] = (locationCounts[el.location_id] || 0) + 1;
-    }
-  });
+    });
+  }
 
   return { locations, employees, pending, locationCounts };
 }
