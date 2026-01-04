@@ -25,7 +25,7 @@ export default function BusinessSignupPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: 'https://modelnets.com/auth/callback',
         },
       });
 
