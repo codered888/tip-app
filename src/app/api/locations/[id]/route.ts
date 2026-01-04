@@ -1,0 +1,91 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { isAuthenticated } from '@/lib/auth';
+import { createAdminClient } from '@/lib/supabase';
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const { name } = await request.json();
+
+    if (!name?.trim()) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+    const slug = generateSlug(name);
+
+    // Check if slug already exists for a different location
+    const { data: existing } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('slug', slug)
+      .neq('id', id)
+      .single();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'A location with a similar name already exists' },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from('locations')
+      .update({ name: name.trim(), slug })
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Update location error:', error);
+    return NextResponse.json({ error: 'Failed to update location' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const supabase = createAdminClient();
+
+    const { error } = await supabase
+      .from('locations')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete location error:', error);
+    return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 });
+  }
+}

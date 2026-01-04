@@ -1,26 +1,145 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Sage/Eucalyptus Palette - Spa Aesthetic */
+  --sage-100: #e8ede9;
+  --sage-200: #d1dbd3;
+  --sage-300: #a8bfad;
+  --sage-400: #7a9980;
+  --sage-500: #5a7a60;
+  --sage-600: #3d5641;
+
+  /* Warm Stone Palette */
+  --stone-50: #faf9f7;
+  --stone-100: #f5f3ef;
+  --stone-200: #e8e5df;
+  --stone-300: #d4d0c8;
+  --stone-400: #a8a398;
+  --stone-500: #7a756b;
+  --stone-600: #5c574f;
+  --stone-700: #3d3a35;
+  --stone-800: #2a2825;
+
+  /* Base Colors */
+  --cream: #fdfcfa;
+  --elements-black: #040505;
+  --elements-white: #ffffff;
+
+  /* Legacy coral for payment buttons */
+  --elements-coral: #f15c44;
+  --elements-coral-hover: #e04d35;
+
+  /* Semantic */
+  --background: var(--cream);
+  --foreground: var(--stone-800);
+  --muted: var(--stone-500);
+  --accent: var(--sage-500);
+  --accent-light: var(--sage-100);
+
+  /* Payment brand colors */
+  --venmo-blue: #008CFF;
+  --cashapp-green: #00D632;
+  --zelle-purple: #6D1ED4;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+/* Typography utilities */
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+}
+
+.font-body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Refined focus states */
+:focus-visible {
+  outline: 2px solid var(--sage-400);
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background: var(--sage-400);
+  color: white;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes shapeFloat {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate(10px, -15px) rotate(2deg) scale(1.02);
+  }
+  50% {
+    transform: translate(-5px, -25px) rotate(-1deg) scale(0.98);
+  }
+  75% {
+    transform: translate(-15px, -10px) rotate(1deg) scale(1.01);
+  }
+}
+
+@keyframes fadeInShape {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-shape-float {
+  animation: fadeInShape 1s ease-out forwards, shapeFloat 20s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.6s ease-out forwards;
 }
