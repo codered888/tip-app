@@ -67,16 +67,20 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(adminUrl);
         }
 
-        // Get user's organization membership (explicit query, no joins)
-        const { data: membership, error: membershipError } = await adminSupabase
+        // Get user's organization membership (get first one if multiple)
+        const { data: memberships, error: membershipError } = await adminSupabase
           .from('organization_members')
           .select('organization_id')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const membership = memberships?.[0] || null;
 
         console.log('Auth callback - membership lookup:', {
           userId: user.id,
           membership,
+          totalMemberships: memberships?.length || 0,
           error: membershipError
         });
 

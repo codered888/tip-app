@@ -34,12 +34,15 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Check if user already has an organization (explicit queries, no joins)
-      const { data: membership } = await supabase
+      // Check if user already has an organization (get first one if multiple)
+      const { data: memberships } = await supabase
         .from('organization_members')
         .select('organization_id')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const membership = memberships?.[0] || null;
 
       if (membership?.organization_id) {
         // Get organization slug separately
