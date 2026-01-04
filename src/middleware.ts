@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // App domain configuration
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN || 'tip-app.vercel.app';
+const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN || 'modelnets.com';
 const LOCALHOST_DOMAIN = 'localhost:3000';
 
 export async function middleware(request: NextRequest) {
@@ -13,9 +13,9 @@ export async function middleware(request: NextRequest) {
   let subdomain: string | null = null;
 
   if (hostname.includes(APP_DOMAIN)) {
-    // Production: extract subdomain from tip-app.vercel.app
+    // Production: extract subdomain from modelnets.com
     const parts = hostname.replace(`.${APP_DOMAIN}`, '').split('.');
-    if (parts[0] && parts[0] !== 'www' && parts[0] !== 'tip-app') {
+    if (parts[0] && parts[0] !== 'www' && parts[0] !== APP_DOMAIN.split('.')[0]) {
       subdomain = parts[0];
     }
   } else if (hostname.includes(LOCALHOST_DOMAIN)) {
