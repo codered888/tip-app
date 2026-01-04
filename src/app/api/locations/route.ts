@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('slug', slug)
       .eq('organization_id', organizationId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json(

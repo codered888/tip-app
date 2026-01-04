@@ -69,6 +69,12 @@ export default async function EmployeesPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-[var(--stone-800)]">Employees</h1>
+        <Link
+          href="/dashboard/employees/new"
+          className="px-4 py-2 bg-[var(--sage-500)] hover:bg-[var(--sage-600)] text-white font-medium rounded-lg transition-colors"
+        >
+          Add Employee
+        </Link>
       </div>
 
       {/* Approved Employees */}
