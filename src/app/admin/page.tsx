@@ -60,9 +60,6 @@ export default function AdminLoginPage() {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-[var(--stone-400)] mb-3">
-              Elements Massage
-            </p>
             <h1 className="font-display text-2xl font-medium text-[var(--stone-800)]">
               Admin Login
             </h1>

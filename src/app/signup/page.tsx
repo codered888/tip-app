@@ -1,20 +1,45 @@
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase';
 import SignupForm from '@/components/SignupForm';
 import BackgroundShapes from '@/components/BackgroundShapes';
-import type { Location } from '@/lib/types';
+import type { Location, Organization } from '@/lib/types';
 
-async function getLocations() {
+async function getOrganization(slug: string) {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+  return data as Organization | null;
+}
+
+async function getLocations(organizationId: string) {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('locations')
     .select('*')
+    .eq('organization_id', organizationId)
     .order('name');
 
   return (data || []) as Location[];
 }
 
 export default async function SignupPage() {
-  const locations = await getLocations();
+  const headersList = await headers();
+  const orgSlug = headersList.get('x-organization-slug');
+
+  if (!orgSlug) {
+    redirect('/');
+  }
+
+  const org = await getOrganization(orgSlug);
+  if (!org) {
+    redirect('/');
+  }
+
+  const locations = await getLocations(org.id);
 
   return (
     <main className="min-h-screen bg-[var(--cream)] relative overflow-hidden">
@@ -23,10 +48,10 @@ export default async function SignupPage() {
       <div className="relative z-10 max-w-md mx-auto px-5 py-12">
         {/* Header */}
         <header className="text-center mb-8 animate-fade-up">
-          {/* Elements Massage Wordmark */}
+          {/* Organization Name */}
           <div className="mb-4">
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-[var(--stone-400)]">
-              Elements Massage
+              {org.name}
             </p>
           </div>
 
@@ -61,9 +86,9 @@ export default async function SignupPage() {
   );
 }
 
-export function generateMetadata() {
+export async function generateMetadata() {
   return {
-    title: 'Employee Signup | Elements Massage',
+    title: 'Employee Signup',
     description: 'Set up your profile to receive tips from customers',
   };
 }

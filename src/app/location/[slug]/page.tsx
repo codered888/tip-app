@@ -1,15 +1,17 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createAdminClient } from '@/lib/supabase';
 import EmployeeCard from '@/components/EmployeeCard';
 import BackgroundShapes from '@/components/BackgroundShapes';
-import type { Employee, Location } from '@/lib/types';
+import type { Employee, Location, Organization } from '@/lib/types';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 async function getLocationWithEmployees(slug: string) {
+  const supabase = createAdminClient();
+
   const { data: location, error: locationError } = await supabase
     .from('locations')
     .select('*')
@@ -20,9 +22,17 @@ async function getLocationWithEmployees(slug: string) {
     return null;
   }
 
+  // Get the organization for this location
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', location.organization_id)
+    .single();
+
   const { data: allLocations } = await supabase
     .from('locations')
     .select('*')
+    .eq('organization_id', location.organization_id)
     .order('name');
 
   const { data: employeeLocations } = await supabase
@@ -33,6 +43,7 @@ async function getLocationWithEmployees(slug: string) {
   if (!employeeLocations || employeeLocations.length === 0) {
     return {
       location: location as Location,
+      organization: organization as Organization | null,
       employees: [],
       otherLocations: (allLocations || []).filter((l: Location) => l.id !== location.id) as Location[],
     };
@@ -49,6 +60,7 @@ async function getLocationWithEmployees(slug: string) {
 
   return {
     location: location as Location,
+    organization: organization as Organization | null,
     employees: (employees || []) as Employee[],
     otherLocations: (allLocations || []).filter((l: Location) => l.id !== location.id) as Location[],
   };
@@ -62,7 +74,8 @@ export default async function LocationPage({ params }: PageProps) {
     notFound();
   }
 
-  const { location, employees, otherLocations } = data;
+  const { location, organization, employees, otherLocations } = data;
+  const orgName = organization?.name || 'Our Team';
 
   return (
     <main className="min-h-screen bg-[var(--cream)] relative overflow-hidden">
@@ -71,10 +84,10 @@ export default async function LocationPage({ params }: PageProps) {
       <div className="relative z-10 max-w-lg mx-auto px-5 py-8 min-h-screen flex flex-col">
         {/* Header */}
         <header className="text-center mb-10 animate-fade-up">
-          {/* Elements Massage Wordmark */}
+          {/* Organization Name */}
           <div className="mb-6">
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-[var(--stone-400)]">
-              Elements Massage
+              {orgName}
             </p>
           </div>
 
@@ -100,7 +113,7 @@ export default async function LocationPage({ params }: PageProps) {
           {employees.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-[var(--stone-400)]">
-                No therapists available at this location yet.
+                No team members available at this location yet.
               </p>
             </div>
           ) : (
@@ -143,7 +156,7 @@ export default async function LocationPage({ params }: PageProps) {
         {/* Footer */}
         <footer className="mt-12 pt-6 text-center">
           <p className="text-xs text-[var(--stone-400)] font-light">
-            Thank you for visiting Elements Massage
+            Thank you for visiting {orgName}
           </p>
         </footer>
       </div>
@@ -159,8 +172,10 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: 'Location Not Found' };
   }
 
+  const orgName = data.organization?.name || 'Tips';
+
   return {
-    title: `${data.location.name} | Elements Massage`,
-    description: `Show your appreciation to our therapists at Elements Massage ${data.location.name}`,
+    title: `${data.location.name} | ${orgName}`,
+    description: `Show your appreciation to our team at ${orgName} ${data.location.name}`,
   };
 }

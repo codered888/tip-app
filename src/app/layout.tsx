@@ -16,8 +16,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Tips | Elements Massage",
-  description: "Show your appreciation to our massage therapists",
+  title: "Modelnets",
+  description: "Digital tipping made easy for your team",
 };
 
 export default function RootLayout({

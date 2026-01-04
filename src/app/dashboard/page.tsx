@@ -72,130 +72,93 @@ export default async function DashboardPage() {
   const { locations, employees, pending, locationCounts } = await getDashboardData(org.id);
 
   return (
-    <div className="min-h-screen bg-[var(--cream)]">
-      {/* Header */}
-      <header className="bg-white border-b border-[var(--stone-200)]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-[var(--stone-800)]">{org.name}</h1>
-            <p className="text-sm text-[var(--stone-500)]">Dashboard</p>
-          </div>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/dashboard/locations"
-              className="text-sm text-[var(--stone-600)] hover:text-[var(--stone-800)]"
-            >
-              Locations
-            </Link>
-            <Link
-              href="/dashboard/employees"
-              className="text-sm text-[var(--stone-600)] hover:text-[var(--stone-800)]"
-            >
-              Employees
-            </Link>
-            <Link
-              href="/dashboard/pending"
-              className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                pending.length > 0
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-[var(--stone-100)] text-[var(--stone-600)]'
-              }`}
-            >
-              {pending.length} Pending
-            </Link>
-          </nav>
+    <div>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="text-3xl font-bold text-[var(--stone-800)]">{locations.length}</div>
+          <div className="text-[var(--stone-500)] text-sm">Locations</div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="text-3xl font-bold text-[var(--stone-800)]">{locations.length}</div>
-            <div className="text-[var(--stone-500)] text-sm">Locations</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="text-3xl font-bold text-[var(--stone-800)]">{employees.length}</div>
-            <div className="text-[var(--stone-500)] text-sm">Active Employees</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="text-3xl font-bold text-yellow-600">{pending.length}</div>
-            <div className="text-[var(--stone-500)] text-sm">Pending Approval</div>
-          </div>
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="text-3xl font-bold text-[var(--stone-800)]">{employees.length}</div>
+          <div className="text-[var(--stone-500)] text-sm">Active Employees</div>
         </div>
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="text-3xl font-bold text-yellow-600">{pending.length}</div>
+          <div className="text-[var(--stone-500)] text-sm">Pending Approval</div>
+        </div>
+      </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <Link
+          href="/dashboard/locations"
+          className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group"
+        >
+          <h3 className="font-semibold text-[var(--stone-800)] mb-1 group-hover:text-[var(--sage-600)]">
+            Manage Locations
+          </h3>
+          <p className="text-sm text-[var(--stone-500)]">
+            Add, edit, or remove your business locations
+          </p>
+        </Link>
+        <Link
+          href="/dashboard/employees"
+          className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group"
+        >
+          <h3 className="font-semibold text-[var(--stone-800)] mb-1 group-hover:text-[var(--sage-600)]">
+            Manage Employees
+          </h3>
+          <p className="text-sm text-[var(--stone-500)]">
+            View and edit employee profiles
+          </p>
+        </Link>
+      </div>
+
+      {/* Locations Grid */}
+      <h2 className="text-lg font-semibold text-[var(--stone-800)] mb-4">Your Locations</h2>
+      {locations.length === 0 ? (
+        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+          <p className="text-[var(--stone-500)] mb-4">No locations yet</p>
           <Link
             href="/dashboard/locations"
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group"
+            className="inline-block px-4 py-2 bg-[var(--sage-500)] text-white rounded-lg hover:bg-[var(--sage-600)] transition-colors"
           >
-            <h3 className="font-semibold text-[var(--stone-800)] mb-1 group-hover:text-[var(--sage-600)]">
-              Manage Locations
-            </h3>
-            <p className="text-sm text-[var(--stone-500)]">
-              Add, edit, or remove your business locations
-            </p>
-          </Link>
-          <Link
-            href="/dashboard/employees"
-            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group"
-          >
-            <h3 className="font-semibold text-[var(--stone-800)] mb-1 group-hover:text-[var(--sage-600)]">
-              Manage Employees
-            </h3>
-            <p className="text-sm text-[var(--stone-500)]">
-              View and edit employee profiles
-            </p>
+            Add Your First Location
           </Link>
         </div>
-
-        {/* Locations Grid */}
-        <h2 className="text-lg font-semibold text-[var(--stone-800)] mb-4">Your Locations</h2>
-        {locations.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-            <p className="text-[var(--stone-500)] mb-4">No locations yet</p>
-            <Link
-              href="/dashboard/locations"
-              className="inline-block px-4 py-2 bg-[var(--sage-500)] text-white rounded-lg hover:bg-[var(--sage-600)] transition-colors"
-            >
-              Add Your First Location
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {locations.map((location) => (
-              <div key={location.id} className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="font-semibold text-[var(--stone-800)] mb-1">{location.name}</h3>
-                <p className="text-sm text-[var(--stone-500)] mb-3">
-                  {locationCounts[location.id] || 0} employee
-                  {locationCounts[location.id] !== 1 ? 's' : ''}
-                </p>
-                <Link
-                  href={`/location/${location.slug}`}
-                  className="text-sm text-[var(--sage-600)] hover:text-[var(--sage-700)]"
-                >
-                  View Tip Page →
-                </Link>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Employee Signup Link */}
-        <div className="mt-8 bg-white rounded-xl p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-[var(--stone-800)] mb-2">
-            Employee Signup Link
-          </h2>
-          <p className="text-[var(--stone-500)] text-sm mb-4">
-            Share this link with new employees so they can create their profile.
-          </p>
-          <code className="block bg-[var(--stone-100)] px-4 py-3 rounded-lg text-sm text-[var(--stone-700)] overflow-x-auto">
-            https://{orgSlug}.modelnets.com/signup
-          </code>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {locations.map((location) => (
+            <div key={location.id} className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="font-semibold text-[var(--stone-800)] mb-1">{location.name}</h3>
+              <p className="text-sm text-[var(--stone-500)] mb-3">
+                {locationCounts[location.id] || 0} employee
+                {locationCounts[location.id] !== 1 ? 's' : ''}
+              </p>
+              <Link
+                href={`/location/${location.slug}`}
+                className="text-sm text-[var(--sage-600)] hover:text-[var(--sage-700)]"
+              >
+                View Tip Page →
+              </Link>
+            </div>
+          ))}
         </div>
-      </main>
+      )}
+
+      {/* Employee Signup Link */}
+      <div className="mt-8 bg-white rounded-xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--stone-800)] mb-2">
+          Employee Signup Link
+        </h2>
+        <p className="text-[var(--stone-500)] text-sm mb-4">
+          Share this link with new employees so they can create their profile.
+        </p>
+        <code className="block bg-[var(--stone-100)] px-4 py-3 rounded-lg text-sm text-[var(--stone-700)] overflow-x-auto">
+          https://{orgSlug}.modelnets.com/signup
+        </code>
+      </div>
     </div>
   );
 }
