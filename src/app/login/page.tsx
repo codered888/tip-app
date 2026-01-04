@@ -98,10 +98,10 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-6">
               <div className="w-8 h-8 rounded-full bg-[var(--sage-500)] flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
+                <span className="text-white font-bold text-sm">M</span>
               </div>
               <span className="font-display text-xl font-medium text-[var(--stone-800)]">
-                Tips
+                Modelnets
               </span>
             </Link>
 
