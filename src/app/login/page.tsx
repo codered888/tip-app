@@ -1,15 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import BackgroundShapes from '@/components/BackgroundShapes';
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [error, setError] = useState('');
+
+  // Check for error in URL params (from auth callback)
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      setError(urlError);
+    }
+  }, [searchParams]);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -161,5 +171,17 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[var(--cream)] flex items-center justify-center">
+        <p className="text-[var(--stone-500)]">Loading...</p>
+      </main>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

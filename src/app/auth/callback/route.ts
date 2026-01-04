@@ -43,80 +43,90 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      // Get user to determine redirect
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Auth callback - exchangeCodeForSession error:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+      });
+      // Redirect with actual error message
+      const loginUrl = new URL('/login', requestUrl.origin);
+      loginUrl.searchParams.set('error', error.message || 'auth_failed');
+      return NextResponse.redirect(loginUrl);
+    }
 
-      if (user) {
-        // Use admin client to bypass RLS for lookups
-        const adminSupabase = createAdminClient();
+    // Success - get user to determine redirect
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-        // Check if user is super admin
-        const { data: userData } = await adminSupabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
+    if (user) {
+      // Use admin client to bypass RLS for lookups
+      const adminSupabase = createAdminClient();
 
-        if (userData?.role === 'super_admin') {
-          // Redirect to super admin dashboard
-          const adminUrl = new URL(requestUrl.origin);
-          adminUrl.pathname = '/admin';
-          return NextResponse.redirect(adminUrl);
-        }
+      // Check if user is super admin
+      const { data: userData } = await adminSupabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
 
-        // Get user's organization membership (get first one if multiple)
-        const { data: memberships, error: membershipError } = await adminSupabase
-          .from('organization_members')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        const membership = memberships?.[0] || null;
-
-        console.log('Auth callback - membership lookup:', {
-          userId: user.id,
-          membership,
-          totalMemberships: memberships?.length || 0,
-          error: membershipError
-        });
-
-        if (membership?.organization_id) {
-          // Get organization slug separately
-          const { data: org, error: orgError } = await adminSupabase
-            .from('organizations')
-            .select('slug')
-            .eq('id', membership.organization_id)
-            .single();
-
-          console.log('Auth callback - org lookup:', {
-            orgId: membership.organization_id,
-            org,
-            error: orgError
-          });
-
-          if (org?.slug) {
-            const dashboardUrl = `https://${org.slug}.${APP_DOMAIN}/dashboard`;
-            console.log('Auth callback - redirecting to:', dashboardUrl);
-            return NextResponse.redirect(dashboardUrl);
-          }
-        }
-
-        // No organization - redirect to onboarding
-        const onboardingUrl = new URL('/onboarding', requestUrl.origin);
-        return NextResponse.redirect(onboardingUrl);
+      if (userData?.role === 'super_admin') {
+        // Redirect to super admin dashboard
+        const adminUrl = new URL(requestUrl.origin);
+        adminUrl.pathname = '/admin';
+        return NextResponse.redirect(adminUrl);
       }
 
-      // Default redirect
-      return NextResponse.redirect(new URL(next, requestUrl.origin));
+      // Get user's organization membership (get first one if multiple)
+      const { data: memberships, error: membershipError } = await adminSupabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const membership = memberships?.[0] || null;
+
+      console.log('Auth callback - membership lookup:', {
+        userId: user.id,
+        membership,
+        totalMemberships: memberships?.length || 0,
+        error: membershipError
+      });
+
+      if (membership?.organization_id) {
+        // Get organization slug separately
+        const { data: org, error: orgError } = await adminSupabase
+          .from('organizations')
+          .select('slug')
+          .eq('id', membership.organization_id)
+          .single();
+
+        console.log('Auth callback - org lookup:', {
+          orgId: membership.organization_id,
+          org,
+          error: orgError
+        });
+
+        if (org?.slug) {
+          const dashboardUrl = `https://${org.slug}.${APP_DOMAIN}/dashboard`;
+          console.log('Auth callback - redirecting to:', dashboardUrl);
+          return NextResponse.redirect(dashboardUrl);
+        }
+      }
+
+      // No organization - redirect to onboarding
+      const onboardingUrl = new URL('/onboarding', requestUrl.origin);
+      return NextResponse.redirect(onboardingUrl);
     }
+
+    // Default redirect
+    return NextResponse.redirect(new URL(next, requestUrl.origin));
   }
 
-  // Auth error - redirect to login with error
+  // No code param - redirect to login with error
   const loginUrl = new URL('/login', requestUrl.origin);
-  loginUrl.searchParams.set('error', 'auth_failed');
+  loginUrl.searchParams.set('error', 'No authentication code provided');
   return NextResponse.redirect(loginUrl);
 }
