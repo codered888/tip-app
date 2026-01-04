@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase';
 import EmployeeCard from '@/components/EmployeeCard';
 import BackgroundShapes from '@/components/BackgroundShapes';
+import TenantHeader from '@/components/TenantHeader';
 import type { Employee, Location, Organization } from '@/lib/types';
 
 interface PageProps {
@@ -73,6 +74,7 @@ async function getLocationWithEmployees(slug: string, orgSlug: string | null) {
       location: location as Location,
       organization: organization as Organization | null,
       employees: [],
+      allLocations: (allLocations || []) as Location[],
       otherLocations: (allLocations || []).filter((l: Location) => l.id !== location.id) as Location[],
     };
   }
@@ -90,6 +92,7 @@ async function getLocationWithEmployees(slug: string, orgSlug: string | null) {
     location: location as Location,
     organization: organization as Organization | null,
     employees: (employees || []) as Employee[],
+    allLocations: (allLocations || []) as Location[],
     otherLocations: (allLocations || []).filter((l: Location) => l.id !== location.id) as Location[],
   };
 }
@@ -104,23 +107,22 @@ export default async function LocationPage({ params }: PageProps) {
     notFound();
   }
 
-  const { location, organization, employees, otherLocations } = data;
+  const { location, organization, employees, allLocations, otherLocations } = data;
   const orgName = organization?.name || 'Our Team';
 
   return (
     <main className="min-h-screen bg-[var(--cream)] relative overflow-hidden">
+      <TenantHeader
+        orgName={orgName}
+        currentLocation={location}
+        locations={allLocations}
+        showLocationSwitcher={allLocations.length > 1}
+      />
       <BackgroundShapes />
 
       <div className="relative z-10 max-w-lg mx-auto px-5 py-8 min-h-screen flex flex-col">
         {/* Header */}
         <header className="text-center mb-10 animate-fade-up">
-          {/* Organization Name */}
-          <div className="mb-6">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-[var(--stone-400)]">
-              {orgName}
-            </p>
-          </div>
-
           {/* Location Name */}
           <h1 className="font-display text-4xl md:text-5xl text-[var(--stone-800)] mb-4 tracking-tight font-medium">
             {location.name}

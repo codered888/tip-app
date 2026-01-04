@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import BackgroundShapes from '@/components/BackgroundShapes';
+import TenantHeader from '@/components/TenantHeader';
 import { createAdminClient } from '@/lib/supabase';
 import type { Location, Organization } from '@/lib/types';
 
@@ -50,16 +51,11 @@ export default async function HomePage() {
 
     return (
       <main className="min-h-screen bg-[var(--cream)] relative overflow-hidden">
+        <TenantHeader orgName={org.name} />
         <BackgroundShapes />
 
-        <div className="relative z-10 max-w-lg mx-auto px-5 py-12 min-h-screen flex flex-col">
-          <header className="text-center mb-12 animate-fade-up">
-            <div className="mb-6">
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-[var(--stone-400)]">
-                {org.name}
-              </p>
-            </div>
-
+        <div className="relative z-10 max-w-lg mx-auto px-5 py-8 min-h-screen flex flex-col">
+          <header className="text-center mb-10 animate-fade-up">
             <h1 className="font-display text-4xl md:text-5xl text-[var(--stone-800)] mb-4 tracking-tight font-medium">
               Tip Our Team
             </h1>
