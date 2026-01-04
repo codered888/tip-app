@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticatedLegacy, getOrganizationId } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const authenticated = await isAuthenticated();
+    const authenticated = await isAuthenticatedLegacy();
     if (!authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get organization from context (subdomain)
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
     }
 
     const formData = await request.formData();
@@ -30,7 +36,18 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Create employee
+    // Verify locations belong to this organization
+    const { data: validLocations } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .in('id', locationIds);
+
+    if (!validLocations || validLocations.length !== locationIds.length) {
+      return NextResponse.json({ error: 'Invalid locations' }, { status: 400 });
+    }
+
+    // Create employee with organization_id
     const { data: newEmployee, error: insertError } = await supabase
       .from('employees')
       .insert({
@@ -40,6 +57,7 @@ export async function POST(request: NextRequest) {
         cashapp: cashapp?.trim() || null,
         zelle: zelle?.trim() || null,
         status,
+        organization_id: organizationId,
       })
       .select('id')
       .single();

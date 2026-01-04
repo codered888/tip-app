@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticatedLegacy, getOrganizationId } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
 function generateSlug(name: string): string {
@@ -12,9 +12,15 @@ function generateSlug(name: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const authenticated = await isAuthenticated();
+    const authenticated = await isAuthenticatedLegacy();
     if (!authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get organization from context
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
     }
 
     const { name } = await request.json();
@@ -26,11 +32,12 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
     const slug = generateSlug(name);
 
-    // Check if slug already exists
+    // Check if slug already exists within this organization
     const { data: existing } = await supabase
       .from('locations')
       .select('id')
       .eq('slug', slug)
+      .eq('organization_id', organizationId)
       .single();
 
     if (existing) {
@@ -42,7 +49,11 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('locations')
-      .insert({ name: name.trim(), slug })
+      .insert({
+        name: name.trim(),
+        slug,
+        organization_id: organizationId,
+      })
       .select()
       .single();
 

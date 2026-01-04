@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticatedLegacy, getOrganizationId } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
 function generateSlug(name: string): string {
@@ -15,9 +15,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authenticated = await isAuthenticated();
+    const authenticated = await isAuthenticatedLegacy();
     if (!authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get organization from context
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
     }
 
     const { id } = await params;
@@ -30,11 +36,24 @@ export async function PUT(
     const supabase = createAdminClient();
     const slug = generateSlug(name);
 
-    // Check if slug already exists for a different location
+    // Verify location belongs to this organization
+    const { data: existingLocation } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('id', id)
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (!existingLocation) {
+      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+    }
+
+    // Check if slug already exists for a different location in this org
     const { data: existing } = await supabase
       .from('locations')
       .select('id')
       .eq('slug', slug)
+      .eq('organization_id', organizationId)
       .neq('id', id)
       .single();
 
@@ -48,7 +67,8 @@ export async function PUT(
     const { error } = await supabase
       .from('locations')
       .update({ name: name.trim(), slug })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', organizationId);
 
     if (error) {
       throw error;
@@ -66,18 +86,26 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authenticated = await isAuthenticated();
+    const authenticated = await isAuthenticatedLegacy();
     if (!authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get organization from context
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
     }
 
     const { id } = await params;
     const supabase = createAdminClient();
 
+    // Delete location (only if it belongs to this organization)
     const { error } = await supabase
       .from('locations')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', organizationId);
 
     if (error) {
       throw error;

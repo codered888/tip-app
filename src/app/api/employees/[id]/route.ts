@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticatedLegacy, getOrganizationId } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase';
 
 export async function PUT(
@@ -7,9 +7,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authenticated = await isAuthenticated();
+    const authenticated = await isAuthenticatedLegacy();
     if (!authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get organization from context
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
     }
 
     const { id } = await params;
@@ -29,6 +35,29 @@ export async function PUT(
     }
 
     const supabase = createAdminClient();
+
+    // Verify employee belongs to this organization
+    const { data: existingEmployee } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('id', id)
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (!existingEmployee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    // Verify locations belong to this organization
+    const { data: validLocations } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .in('id', locationIds);
+
+    if (!validLocations || validLocations.length !== locationIds.length) {
+      return NextResponse.json({ error: 'Invalid locations' }, { status: 400 });
+    }
 
     // Upload photo if provided
     let photoUrl: string | undefined;
@@ -68,7 +97,8 @@ export async function PUT(
     const { error: updateError } = await supabase
       .from('employees')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', organizationId);
 
     if (updateError) {
       throw updateError;
@@ -101,19 +131,26 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authenticated = await isAuthenticated();
+    const authenticated = await isAuthenticatedLegacy();
     if (!authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get organization from context
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
     }
 
     const { id } = await params;
     const supabase = createAdminClient();
 
-    // Delete employee (cascades to employee_locations)
+    // Delete employee (only if it belongs to this organization)
     const { error } = await supabase
       .from('employees')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', organizationId);
 
     if (error) {
       throw error;
