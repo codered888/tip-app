@@ -1,13 +1,14 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import BackgroundShapes from '@/components/BackgroundShapes';
-import { supabase } from '@/lib/supabase';
+import { createAdminClient } from '@/lib/supabase';
 import type { Location, Organization } from '@/lib/types';
 
 // Get organization from subdomain
 async function getOrganization(slug: string | null) {
   if (!slug) return null;
 
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('organizations')
     .select('*')
@@ -19,6 +20,7 @@ async function getOrganization(slug: string | null) {
 
 // Get locations for an organization
 async function getLocations(organizationId: string) {
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from('locations')
     .select('*')
