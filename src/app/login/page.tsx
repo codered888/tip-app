@@ -21,9 +21,17 @@ function LoginForm() {
     }
   }, [searchParams]);
 
+  // Set cookies on parent domain for cross-subdomain auth
+  const cookieDomain = '.modelnets.com';
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        domain: cookieDomain,
+      },
+    }
   );
 
   const handleSubmit = async (e: React.FormEvent) => {

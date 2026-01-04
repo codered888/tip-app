@@ -21,9 +21,15 @@ export default function OnboardingPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [error, setError] = useState('');
 
+  // Set cookies on parent domain for cross-subdomain auth
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        domain: '.modelnets.com',
+      },
+    }
   );
 
   useEffect(() => {
