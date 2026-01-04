@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { Location } from '@/lib/types';
 
 interface LocationWithCount extends Location {
@@ -158,6 +159,12 @@ export default function LocationsList({ initialLocations }: LocationsListProps) 
                     </>
                   ) : (
                     <>
+                      <Link
+                        href={`/dashboard/locations/${location.id}`}
+                        className="text-[var(--sage-600)] hover:text-[var(--sage-700)] text-sm font-medium"
+                      >
+                        View
+                      </Link>
                       <button
                         onClick={() => startEdit(location)}
                         className="text-[var(--sage-600)] hover:text-[var(--sage-700)] text-sm font-medium"
