@@ -65,13 +65,14 @@ export async function GET(request: NextRequest) {
 
         if (membership?.organizations) {
           // Redirect to organization dashboard
-          // In production: {slug}.tip-app.vercel.app/dashboard
           const org = membership.organizations as unknown as { slug: string };
-          const dashboardUrl = new URL(requestUrl.origin);
-          dashboardUrl.pathname = '/dashboard';
-          dashboardUrl.searchParams.set('org', org.slug);
+          const dashboardUrl = new URL(`https://${org.slug}.modelnets.com/dashboard`);
           return NextResponse.redirect(dashboardUrl);
         }
+
+        // No organization - redirect to onboarding
+        const onboardingUrl = new URL('/onboarding', requestUrl.origin);
+        return NextResponse.redirect(onboardingUrl);
       }
 
       // Default redirect
