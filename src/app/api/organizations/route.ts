@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       .from('organizations')
       .select('id')
       .eq('slug', slug)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json({ error: 'This URL is already taken' }, { status: 400 });
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       .from('users')
       .select('id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!existingUser) {
       // Create user record
@@ -104,13 +104,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Add user as owner of the organization
-    const { error: memberError } = await adminSupabase
+    const { data: membership, error: memberError } = await adminSupabase
       .from('organization_members')
       .insert({
         organization_id: org.id,
         user_id: user.id,
         role: 'owner',
-      });
+      })
+      .select()
+      .single();
+
+    console.log('Organization created:', {
+      orgId: org.id,
+      orgSlug: org.slug,
+      userId: user.id,
+      membershipCreated: !!membership,
+      memberError: memberError?.message,
+    });
 
     if (memberError) {
       throw memberError;
