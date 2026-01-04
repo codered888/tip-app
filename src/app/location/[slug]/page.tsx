@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase';
 import EmployeeCard from '@/components/EmployeeCard';
@@ -9,25 +10,52 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getLocationWithEmployees(slug: string) {
+async function getLocationWithEmployees(slug: string, orgSlug: string | null) {
   const supabase = createAdminClient();
 
-  const { data: location, error: locationError } = await supabase
+  // First get the organization from subdomain
+  let organizationId: string | null = null;
+  let organization: Organization | null = null;
+
+  if (orgSlug) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('slug', orgSlug)
+      .single();
+
+    if (org) {
+      organization = org as Organization;
+      organizationId = org.id;
+    }
+  }
+
+  // Query location - filter by org if we have one
+  let locationQuery = supabase
     .from('locations')
     .select('*')
-    .eq('slug', slug)
-    .single();
+    .eq('slug', slug);
+
+  if (organizationId) {
+    locationQuery = locationQuery.eq('organization_id', organizationId);
+  }
+
+  const { data: location, error: locationError } = await locationQuery.single();
 
   if (locationError || !location) {
+    console.error('Location not found:', slug, 'org:', orgSlug, 'error:', locationError);
     return null;
   }
 
-  // Get the organization for this location
-  const { data: organization } = await supabase
-    .from('organizations')
-    .select('*')
-    .eq('id', location.organization_id)
-    .single();
+  // If we didn't have org from subdomain, get it from the location
+  if (!organization) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('id', location.organization_id)
+      .single();
+    organization = org as Organization | null;
+  }
 
   const { data: allLocations } = await supabase
     .from('locations')
@@ -68,7 +96,9 @@ async function getLocationWithEmployees(slug: string) {
 
 export default async function LocationPage({ params }: PageProps) {
   const { slug } = await params;
-  const data = await getLocationWithEmployees(slug);
+  const headersList = await headers();
+  const orgSlug = headersList.get('x-organization-slug');
+  const data = await getLocationWithEmployees(slug, orgSlug);
 
   if (!data) {
     notFound();
@@ -166,7 +196,9 @@ export default async function LocationPage({ params }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
-  const data = await getLocationWithEmployees(slug);
+  const headersList = await headers();
+  const orgSlug = headersList.get('x-organization-slug');
+  const data = await getLocationWithEmployees(slug, orgSlug);
 
   if (!data) {
     return { title: 'Location Not Found' };
