@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           .from('users')
           .select('role')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (userData?.role === 'super_admin') {
           // Redirect to super admin dashboard
@@ -68,11 +68,13 @@ export async function GET(request: NextRequest) {
         }
 
         // Get user's organization
-        const { data: membership } = await adminSupabase
+        const { data: membership, error: membershipError } = await adminSupabase
           .from('organization_members')
           .select('organization_id, organizations(slug)')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
+
+        console.log('Auth callback - user:', user.id, 'membership:', membership, 'error:', membershipError);
 
         if (membership?.organizations) {
           // Redirect to organization dashboard

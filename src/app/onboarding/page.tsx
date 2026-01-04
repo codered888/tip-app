@@ -33,6 +33,21 @@ export default function OnboardingPage() {
         router.push('/login');
         return;
       }
+
+      // Check if user already has an organization
+      const { data: membership } = await supabase
+        .from('organization_members')
+        .select('organizations(slug)')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membership?.organizations) {
+        // User already has an org - redirect to their dashboard
+        const org = membership.organizations as unknown as { slug: string };
+        window.location.href = `https://${org.slug}.modelnets.com/dashboard`;
+        return;
+      }
+
       setIsCheckingAuth(false);
     }
     checkAuth();
