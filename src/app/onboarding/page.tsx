@@ -34,18 +34,26 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Check if user already has an organization
+      // Check if user already has an organization (explicit queries, no joins)
       const { data: membership } = await supabase
         .from('organization_members')
-        .select('organizations(slug)')
+        .select('organization_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (membership?.organizations) {
-        // User already has an org - redirect to their dashboard
-        const org = membership.organizations as unknown as { slug: string };
-        window.location.href = `https://${org.slug}.modelnets.com/dashboard`;
-        return;
+      if (membership?.organization_id) {
+        // Get organization slug separately
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('slug')
+          .eq('id', membership.organization_id)
+          .single();
+
+        if (org?.slug) {
+          // User already has an org - redirect to their dashboard
+          window.location.href = `https://${org.slug}.modelnets.com/dashboard`;
+          return;
+        }
       }
 
       setIsCheckingAuth(false);

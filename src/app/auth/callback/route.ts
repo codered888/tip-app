@@ -67,20 +67,38 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(adminUrl);
         }
 
-        // Get user's organization
+        // Get user's organization membership (explicit query, no joins)
         const { data: membership, error: membershipError } = await adminSupabase
           .from('organization_members')
-          .select('organization_id, organizations(slug)')
+          .select('organization_id')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        console.log('Auth callback - user:', user.id, 'membership:', membership, 'error:', membershipError);
+        console.log('Auth callback - membership lookup:', {
+          userId: user.id,
+          membership,
+          error: membershipError
+        });
 
-        if (membership?.organizations) {
-          // Redirect to organization dashboard
-          const org = membership.organizations as unknown as { slug: string };
-          const dashboardUrl = new URL(`https://${org.slug}.${APP_DOMAIN}/dashboard`);
-          return NextResponse.redirect(dashboardUrl);
+        if (membership?.organization_id) {
+          // Get organization slug separately
+          const { data: org, error: orgError } = await adminSupabase
+            .from('organizations')
+            .select('slug')
+            .eq('id', membership.organization_id)
+            .single();
+
+          console.log('Auth callback - org lookup:', {
+            orgId: membership.organization_id,
+            org,
+            error: orgError
+          });
+
+          if (org?.slug) {
+            const dashboardUrl = `https://${org.slug}.${APP_DOMAIN}/dashboard`;
+            console.log('Auth callback - redirecting to:', dashboardUrl);
+            return NextResponse.redirect(dashboardUrl);
+          }
         }
 
         // No organization - redirect to onboarding
