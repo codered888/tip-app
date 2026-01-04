@@ -66,10 +66,10 @@ export async function GET(request: NextRequest) {
         if (membership?.organizations) {
           // Redirect to organization dashboard
           // In production: {slug}.tip-app.vercel.app/dashboard
-          const orgSlug = (membership.organizations as { slug: string }).slug;
+          const org = membership.organizations as unknown as { slug: string };
           const dashboardUrl = new URL(requestUrl.origin);
           dashboardUrl.pathname = '/dashboard';
-          dashboardUrl.searchParams.set('org', orgSlug);
+          dashboardUrl.searchParams.set('org', org.slug);
           return NextResponse.redirect(dashboardUrl);
         }
       }
