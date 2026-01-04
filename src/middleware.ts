@@ -30,6 +30,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // Determine cookie domain for cross-subdomain auth
+  const isProduction = hostname.includes(APP_DOMAIN);
+  const cookieDomain = isProduction ? `.${APP_DOMAIN}` : undefined;
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -39,14 +43,17 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, {
+              ...options,
+              domain: cookieDomain,
+            })
           );
         },
       },
